@@ -33,6 +33,8 @@ async def predict_route(features: IrisFeatures):
         }
         results = [name_mapping[pred] for pred in predictions]
         return {"prediction": results}
+    
+    
     except Exception as e:
         raise fastapi.HTTPException(status_code=500, detail=str(e))
 

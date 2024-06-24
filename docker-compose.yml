@@ -11,3 +11,13 @@ services:
       - ./model_api:/app
     environment:
       - MODEL_PATH=/app/knn_model.pkl
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - cache
+  
+  cache:
+    image: "redis:alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
