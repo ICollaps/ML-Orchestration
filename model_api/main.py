@@ -14,9 +14,9 @@ class IrisFeatures(BaseModel):
     petal_length: float
     petal_width: float
 
-@app.get("/test")
-async def test_route():
-    return {"message": "Hello, World!"}
+@app.get("/health")
+async def health():
+    return {"response": "ok"}
 
 @app.post("/predict")
 async def predict_route(features: IrisFeatures):
@@ -25,9 +25,17 @@ async def predict_route(features: IrisFeatures):
     try:
         data_df = pd.DataFrame([features.dict()])
         prediction = model.predict(data_df)
-        return {"prediction": prediction.tolist()}
+        predictions = prediction.tolist()
+        name_mapping = {
+            0: "Iris setosa",
+            1: "Iris versicolor",
+            2: "Iris virginica"
+        }
+        results = [name_mapping[pred] for pred in predictions]
+        return {"prediction": results}
     except Exception as e:
         raise fastapi.HTTPException(status_code=500, detail=str(e))
+
 
 async def load_model():
     global model
