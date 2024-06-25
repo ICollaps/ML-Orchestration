@@ -87,6 +87,15 @@ x-airflow-common:
 
 services:
 
+  clickhouse:
+    image: "clickhouse/clickhouse-server"
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9005:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+
   minio:
     image: docker.io/bitnami/minio:2024
     ports:
@@ -298,5 +307,6 @@ services:
 
 volumes:
   postgres-db-volume:
+  clickhouse_data:
   minio_data:
     driver: local
