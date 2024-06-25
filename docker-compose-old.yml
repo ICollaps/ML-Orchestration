@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+    container_name: api
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./api:/app
+    environment:
+      - MODEL_PATH=/app/model.pkl
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - cache
+  
+  cache:
+    image: "redis:alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  mlflow:
+    build:
+      context: ./mlflow
+    container_name: mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - ARTIFACT_ROOT=/mlflow/mlruns
+  
+  clickhouse:
+    image: "clickhouse/clickhouse-server"
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9005:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+  
+  postgres:
+    image: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: kestra
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: k3str4
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      
+  kestra:
+    image: kestra/kestra:v0.17.4-full
+    pull_policy: always
+    # Note that this is meant for development only. Refer to the documentation for production deployments of Kestra which runs without a root user.
+    user: "root"
+    command: server standalone --worker-thread=128
+    volumes:
+      - kestra-data:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/kestra-wd:/tmp/kestra-wd
+    environment:
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://postgres:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: k3str4
+        kestra:
+          server:
+            basic-auth:
+              enabled: false
+              username: "admin@kestra.io" # it must be a valid email address
+              password: kestra
+          repository:
+            type: postgres
+          storage:
+            type: local
+            local:
+              base-path: "/app/storage"
+          queue:
+            type: postgres
+          tasks:
+            tmp-dir:
+              path: /tmp/kestra-wd/tmp
+          url: http://localhost:8080/
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+
+  minio:
+    image: docker.io/bitnami/minio:2024
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - 'minio_data:/bitnami/minio/data'
+
+
+volumes:
+  clickhouse_data:
+  postgres-data:
+  kestra-data:
+  minio_data:
+    driver: local
