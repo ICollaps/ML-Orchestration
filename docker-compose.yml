@@ -97,9 +97,21 @@ services:
       - "8080:8080"
       - "8081:8081"
 
+  minio:
+    image: docker.io/bitnami/minio:2024
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - 'minio_data:/bitnami/minio/data'
+
+
 volumes:
   clickhouse_data:
   postgres-data:
-      driver: local
   kestra-data:
+  minio_data:
     driver: local
