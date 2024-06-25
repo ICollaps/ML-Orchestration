@@ -3,6 +3,7 @@ from airflow.decorators import dag, task
 from datetime import datetime, timedelta
 from tasks.extract.main import extract
 from tasks.transform.main import transform
+from tasks.load.main import load
 # Default arguments for the DAG
 default_args = {
     'owner': 'esgi',
@@ -25,7 +26,8 @@ def etl_dag():
 
     extracted = extract()
     transformed = transform()
+    loaded = load()
 
-    extracted >> transformed
+    extracted >> transformed >> loaded
 
 etl_dag_instance = etl_dag()
