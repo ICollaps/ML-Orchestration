@@ -10,7 +10,7 @@ import datetime
 import math
 
 @task
-def transform():
+def transform(timestamp: int):
 
     minio_url = "minio:9000"
     print(f"Connecting to minio on {minio_url}")
@@ -89,9 +89,6 @@ def transform():
     final_df.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
 
-    now = datetime.datetime.now()
-    timestamp = math.trunc(datetime.datetime.timestamp(now))
-
     minio_client.put_object(
         output_bucket_name,
         f"{timestamp}.csv",
@@ -101,3 +98,4 @@ def transform():
     )
 
     print("Data successfully processed and saved to MinIO bucket 'output'.")
+    return timestamp

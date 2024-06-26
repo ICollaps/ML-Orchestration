@@ -26,10 +26,11 @@ default_args = {
 def etl_dag():
 
     cleaned = clean_data()
-    extracted = extract()
-    transformed = transform()
-    loaded = load()
+    extraction_timestamp = extract()
+    transform_timestamp = transform(timestamp=extraction_timestamp)
+    loaded = load(timestamp=transform_timestamp)
 
-    cleaned >> extracted >> transformed >> loaded
+
+    cleaned >> extraction_timestamp >> transform_timestamp >> loaded
 
 etl_dag_instance = etl_dag()

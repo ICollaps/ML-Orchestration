@@ -77,4 +77,6 @@ def extract():
 
     print(f"Data successfully saved to MinIO in bucket '{bucket_name}' with timestamp '{timestamp}'")
 
+    return timestamp
+
 
