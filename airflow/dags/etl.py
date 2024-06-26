@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.decorators import dag, task
 from datetime import datetime, timedelta
+from tasks.clean.clean_data import clean_data
 from tasks.extract.main import extract
 from tasks.transform.main import transform
 from tasks.load.main import load
@@ -24,10 +25,11 @@ default_args = {
 )
 def etl_dag():
 
+    cleaned = clean_data()
     extracted = extract()
     transformed = transform()
     loaded = load()
 
-    extracted >> transformed >> loaded
+    cleaned >> extracted >> transformed >> loaded
 
 etl_dag_instance = etl_dag()
