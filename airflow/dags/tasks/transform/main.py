@@ -38,9 +38,9 @@ def transform(timestamp: int):
         folders[folder].append(obj.object_name)
 
     for folder, files in folders.items():
-        if folder == ".DS_Store":
+        if folder != f"{timestamp}.csv":
             continue
-
+        
         print(f"Processing folder: {folder}")
         
         station_status_path = f"{folder}/station_status.json"

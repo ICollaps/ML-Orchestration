@@ -1,0 +1,6 @@
+minio
+pandas
+requests
+clickhouse-connect
+tensorflow
+scikit-learn
