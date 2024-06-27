@@ -65,6 +65,8 @@ def transform(timestamp: int):
         else:
             continue
 
+        df['id'] = data['lastUpdatedOther']
+
         cleanup = {'weather': {'Ensoleillé': 0, 'Nuageux': 1, 'Peu nuageux': 1, 'Très nuageux': 1, 'Pluie': 2, 'Averses': 2, 'Neige': 3, 'Brouillard': 4, 'Orage': 5, 'Couvert': 6, 'Ciel voilé': 7}}
         df_meteo.replace(cleanup, inplace=True)
 
