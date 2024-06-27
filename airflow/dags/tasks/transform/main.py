@@ -9,8 +9,6 @@ from airflow.decorators import task
 import datetime
 import math
 import json
-import tqdm
-
 
 @task
 def transform(timestamp: int):
@@ -147,7 +145,7 @@ def transform(timestamp: int):
 
             futur_availability = []
 
-            for tuple in tqdm(df_tuples):
+            for tuple in (df_tuples):
                 avail = availability_dict.get(tuple)
                 if avail == None:
                     later_timestamps = [timestamp for timestamp in sorted_epochs if timestamp >= tuple[1]]
