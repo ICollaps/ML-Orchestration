@@ -2,13 +2,17 @@ import fastapi
 import uvicorn
 import pandas as pd
 from pydantic import BaseModel
-from minio import Minio
 import mlflow
 import mlflow.sklearn
 import joblib
-import flaml
+import redis
+import hashlib
+import json
+
 
 app = fastapi.FastAPI()
+redis_client = redis.Redis(host='127.0.0.1', port=6380, db=0)
+
 
 async def load_model():
     global model
@@ -18,6 +22,7 @@ async def load_model():
     print("Model loaded")
 
 
+
 class Features(BaseModel):
     id: int
     stationCode: int
@@ -25,7 +30,6 @@ class Features(BaseModel):
     num_bikes_available: int
     mechanical: int
     ebike: int
-    num_docks_available: int
     is_installed: int
     is_returning: int
     is_renting: int
@@ -37,6 +41,12 @@ class Features(BaseModel):
     probawind70: int
     probawind100: int
 
+
+def generate_cache_key(features: Features):
+    features_dict = features.dict()
+    features_str = json.dumps(features_dict, sort_keys=True)
+    return hashlib.md5(features_str.encode('utf-8')).hexdigest()
+
 @app.get("/health")
 async def health():
     return {"response": "ok"}
@@ -47,11 +57,21 @@ async def predict(features: Features):
     if model is None:
         raise fastapi.HTTPException(status_code=404, detail="Model not loaded.")
     try:
+        cache_key = generate_cache_key(features)
+        cached_result = redis_client.get(cache_key)
+
+        if cached_result:
+            print("Result returned from cache")
+            return {"prediction": json.loads(cached_result)}
 
         data = pd.DataFrame([features.dict()])
         prediction = model.predict(data)
+        predicted_labels = prediction.tolist()
         
-        return {"prediction": prediction.tolist()}
+        redis_client.set(cache_key, json.dumps(predicted_labels))
+        print("Result stored in cache")
+        
+        return {"prediction": predicted_labels}
     
 
     except Exception as e:

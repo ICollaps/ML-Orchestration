@@ -95,6 +95,11 @@ services:
     ports:
       - "8000:8000"
 
+  cache:
+    image: "redis:alpine"
+    container_name: redis
+    ports:
+      - "6380:6379"
 
   clickhouse:
     image: "clickhouse/clickhouse-server"
