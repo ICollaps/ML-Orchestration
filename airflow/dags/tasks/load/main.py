@@ -53,6 +53,7 @@ def load(timestamp: int):
     objects = minio_client.list_objects(bucket_name, recursive=True)
 
     for obj in objects:
+        print(obj)
         if obj.object_name == f"{timestamp}.csv":
             print(f"Processing {obj.object_name}")
             
