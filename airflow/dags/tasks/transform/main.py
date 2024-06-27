@@ -8,6 +8,8 @@ from collections import defaultdict
 from airflow.decorators import task
 import datetime
 import math
+import json
+
 
 @task
 def transform(timestamp: int):
@@ -25,7 +27,7 @@ def transform(timestamp: int):
     bucket_name = "data"
     output_bucket_name = "output"
 
-    if not minio_client.bucket_exists(output_bucket_name):
+    if not minio_client.bucket_exists(output_bucket_name): # If bucket doesn't exist
         minio_client.make_bucket(output_bucket_name)
 
     final_df = pd.DataFrame()
@@ -39,6 +41,9 @@ def transform(timestamp: int):
 
     for folder, files in folders.items():
         if folder == ".DS_Store":
+            continue
+        
+        if folder != str(timestamp):
             continue
 
         print(f"Processing folder: {folder}")
@@ -84,6 +89,20 @@ def transform(timestamp: int):
             df['stationCode'] = df['stationCode'].astype('int64')
 
         final_df = pd.concat([final_df, df], axis=0)
+
+
+        # load station_information data
+        station_information_file = open('./dags/tasks/transform/station_information.json')
+        station_information = json.load(station_information_file)
+        
+        # load jours_feries_metropole data
+        jours_feries_metropole = pd.read_csv("./dags/tasks/transform/jours_feries_metropole.csv")
+
+        # load station cluster data
+        station_cluster = pd.read_csv("./dags/tasks/transform/station_cluster.csv")
+
+
+
 
     csv_buffer = io.BytesIO()
     final_df.to_csv(csv_buffer, index=False)
