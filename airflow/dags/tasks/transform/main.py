@@ -62,25 +62,7 @@ def transform(timestamp: int):
         else:
             continue
 
-        cleanup = {'weather': {'Ensoleillé': 0, 'Nuageux': 1, 'Peu nuageux': 1, 'Très nuageux': 1,
-                               'Pluie': 2, 'Averses': 2, 'Neige': 3, 'Brouillard': 4, 'Orage': 5, 'Couvert': 6, 'Ciel voilé': 7}}
-        df_meteo.replace(cleanup, inplace=True)
-
         df['id'] = data['lastUpdatedOther']
-
-        df['mechanical'] = df['num_bikes_available_types'].apply(
-            lambda x: x[0]['mechanical'])
-        df['ebike'] = df['num_bikes_available_types'].apply(
-            lambda x: x[1]['ebike'])
-        df.drop(['num_bikes_available_types'], axis=1, inplace=True)
-
-        df = pd.merge(df, df_meteo, how='cross')
-
-        df = pd.merge(df, df_informations[[
-                      'station_id', 'lon', 'lat', 'name']], on='station_id', how='left')
-
-        df.drop(['numBikesAvailable', 'numDocksAvailable'],
-                axis=1, inplace=True)
 
         df = df[['id', 'stationCode', 'station_id', 'num_bikes_available', 'mechanical', 'ebike', 'num_docks_available', 'is_installed', 'is_returning',
                  'is_renting', 'last_reported', 'weather', 'temp', 'probarain', 'probafog', 'probawind70', 'probawind100', 'lon', 'lat', 'name']]
