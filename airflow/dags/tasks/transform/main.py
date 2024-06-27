@@ -8,6 +8,8 @@ from collections import defaultdict
 from airflow.decorators import task
 import datetime
 import math
+import json
+
 
 @task
 def transform(timestamp: int):
@@ -25,7 +27,7 @@ def transform(timestamp: int):
     bucket_name = "data"
     output_bucket_name = "output"
 
-    if not minio_client.bucket_exists(output_bucket_name):
+    if not minio_client.bucket_exists(output_bucket_name): # If bucket doesn't exist
         minio_client.make_bucket(output_bucket_name)
 
     final_df = pd.DataFrame()
@@ -38,9 +40,12 @@ def transform(timestamp: int):
         folders[folder].append(obj.object_name)
 
     for folder, files in folders.items():
-        if folder != f"{timestamp}.csv":
+        if folder == ".DS_Store":
             continue
         
+        if folder != str(timestamp):
+            continue
+
         print(f"Processing folder: {folder}")
         
         station_status_path = f"{folder}/station_status.json"
@@ -84,6 +89,7 @@ def transform(timestamp: int):
             df['stationCode'] = df['stationCode'].astype('int64')
 
         final_df = pd.concat([final_df, df], axis=0)
+
 
     csv_buffer = io.BytesIO()
     final_df.to_csv(csv_buffer, index=False)
