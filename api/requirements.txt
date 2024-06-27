@@ -5,3 +5,8 @@ joblib
 pandas
 pydantic
 redis
+mlflow
+minio
+flaml
+xgboost
+lightgbm

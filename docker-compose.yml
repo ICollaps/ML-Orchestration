@@ -88,6 +88,14 @@ x-airflow-common:
 
 services:
 
+  api:
+    build:
+      context: ./api
+    container_name: api
+    ports:
+      - "8000:8000"
+
+
   clickhouse:
     image: "clickhouse/clickhouse-server"
     container_name: clickhouse
@@ -104,8 +112,11 @@ services:
       - '9000:9000'
       - '9001:9001'
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+    - MINIO_ROOT_USER=minioadmin
+    - MINIO_ROOT_PASSWORD=minioadmin
+    - MINIO_NOTIFY_WEBHOOK_ENABLE_PRIMARY=on
+    - MINIO_NOTIFY_WEBHOOK_ENDPOINT_PRIMARY=http://api:8000/webhook
+    - MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_PRIMARY=your_auth_token
     volumes:
       - 'minio_data:/bitnami/minio/data'
 
