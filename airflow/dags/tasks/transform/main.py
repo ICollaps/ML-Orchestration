@@ -10,6 +10,7 @@ import datetime
 import math
 import json
 
+
 @task
 def transform(timestamp: int):
 
@@ -65,10 +66,10 @@ def transform(timestamp: int):
         else:
             continue
 
-        df['id'] = data['lastUpdatedOther']
-
         cleanup = {'weather': {'Ensoleillé': 0, 'Nuageux': 1, 'Peu nuageux': 1, 'Très nuageux': 1, 'Pluie': 2, 'Averses': 2, 'Neige': 3, 'Brouillard': 4, 'Orage': 5, 'Couvert': 6, 'Ciel voilé': 7}}
         df_meteo.replace(cleanup, inplace=True)
+
+        df['id'] = data['lastUpdatedOther']
 
         df['mechanical'] = df['num_bikes_available_types'].apply(lambda x: x[0]['mechanical'])
         df['ebike'] = df['num_bikes_available_types'].apply(lambda x: x[1]['ebike'])
@@ -80,8 +81,7 @@ def transform(timestamp: int):
 
         df.drop(['numBikesAvailable', 'numDocksAvailable'], axis=1, inplace=True)
 
-        df = df[['id', 'stationCode', 'station_id', 'num_bikes_available', 'mechanical', 'ebike', 'num_docks_available', 'is_installed', 'is_returning',
-                 'is_renting', 'last_reported', 'weather', 'temp', 'probarain', 'probafog', 'probawind70', 'probawind100', 'lon', 'lat', 'name']]
+        df = df[['id', 'stationCode', 'station_id', 'num_bikes_available', 'mechanical', 'ebike', 'num_docks_available', 'is_installed', 'is_returning', 'is_renting', 'last_reported', 'weather', 'temp', 'probarain', 'probafog', 'probawind70', 'probawind100', 'lon', 'lat', 'name']]
 
         df = df[df['stationCode'].notna()]
 
@@ -89,91 +89,7 @@ def transform(timestamp: int):
             df['stationCode'] = df['stationCode'].astype('int64')
 
         final_df = pd.concat([final_df, df], axis=0)
-        
-        # load jours_feries_metropole data
-        jours_feries_metropole = pd.read_csv("./dags/tasks/transform/jours_feries_metropole.csv")
 
-        # load station cluster data
-        station_cluster = pd.read_csv("./dags/tasks/transform/station_cluster.csv")
-
-        final_df['stationCode'] = final_df['stationCode'].astype(str)
-        final_df.drop('is_returning', axis=1, inplace=True)  # redundant, since same values as column 'is_renting'
-        list_dates = []
-        list_days = []
-
-        # get time
-        for i in final_df['id'].tolist():
-            list_dates.append(datetime.fromtimestamp(i).strftime('%A %H:%M'))
-            list_days.append(datetime.fromtimestamp(i).strftime('%Y-%m-%d %H:%M:%S'))
-
-        final_df['date_time'] = pd.to_datetime(list_dates)
-        final_df['day_time'] = list_days
-
-        final_df['weekend'] = final_df['day_time'].str.contains('Saturday|Sunday').astype(int)
-
-        final_df['date_time'] = pd.to_datetime(final_df['date_time'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-
-        final_df['date'] = final_df['date_time'].dt.date
-        final_df['date'] = pd.to_datetime(final_df['date'], format='%Y-%m-%d')
-        final_df['time'] = final_df['date_time'].dt.time
-        final_df['hour'] = final_df['date_time'].dt.hour
-        final_df['minute'] = final_df['date_time'].dt.minute
-
-        df_jours_ferie = jours_feries_metropole
-        df_jours_ferie['date'] = pd.to_datetime(df_jours_ferie['date'], format='%Y-%m-%d')
-
-        final_df = pd.merge(final_df, df_jours_ferie, how='left', on='date')
-        final_df.drop(['annee', 'zone'], axis=1, inplace=True)
-        final_df['jour_ferie'] = final_df['nom_jour_ferie'].notna().astype(int)
-        final_df.drop(['nom_jour_ferie'], axis=1, inplace=True)
-
-
-        futur_epochs = [(5, 300), (10, 600), (15, 900), (20, 1200), (25, 1500), (30, 1800)]
-        dfs_velib = [final_df] * len(futur_epochs)
-
-        # Create a dictionary mapping the combination of 'id' and 'stationCode' to the corresponding 'num_docks_available'
-        availability_dict = final_df.set_index(['stationCode', 'id']).groupby(level=[0, 1])[
-            'num_docks_available'].first().to_dict()
-        sorted_epochs = sorted(set(final_df['id']))
-
-        for i in range(len(futur_epochs)):
-            df_velib_fut = dfs_velib[i].copy()
-            # on rajoute une feature qui indique le moment dans le futur pour lequel on veut prédire les disponibilités
-            df_velib_fut['futur_min'] = futur_epochs[i][0]
-            # On rajoute 5 minutes aux timestamps (= 300 epochs)
-            df_velib_fut['futur_epoch'] = df_velib_fut['id'] + futur_epochs[i][1]
-
-            df_tuples = list(zip(df_velib_fut['stationCode'].tolist(), df_velib_fut['futur_epoch'].tolist()))
-
-            futur_availability = []
-
-            for tuple in (df_tuples):
-                avail = availability_dict.get(tuple)
-                if avail == None:
-                    later_timestamps = [timestamp for timestamp in sorted_epochs if timestamp >= tuple[1]]
-                    # if there exists availability data after the current epoch + 5 min, we take the next timestamp we can find
-                    # else, avail keeps the value None
-                    if len(later_timestamps) != 0:
-                        avail = availability_dict.get((tuple[0], later_timestamps[0]))
-                futur_availability.append(avail)
-
-            df_velib_fut['futur_availability'] = futur_availability
-
-            dfs_velib[i] = df_velib_fut
-
-        df_velib_futur = pd.concat(dfs_velib, axis=0)
-
-        df_cluster_station = station_cluster
-        df_cluster_station['stationCode'] = df_cluster_station['stationCode'].astype(str)
-        df_velib_futur = pd.merge(df_velib_futur, df_cluster_station, how='left', on='stationCode')
-
-        df_velib_futur = df_velib_futur[~df_velib_futur['Cluster'].isna()]
-
-        df_velib_training = df_velib_futur[
-            ['stationCode', 'Cluster', 'num_docks_available', 'capacity', 'hour', 'temp', 'probarain', 'weekend',
-             'jour_ferie', 'lat', 'lon', 'futur_min', 'futur_availability']]
-
-        final_df = df_velib_training
 
     csv_buffer = io.BytesIO()
     final_df.to_csv(csv_buffer, index=False)
