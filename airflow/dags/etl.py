@@ -1,11 +1,13 @@
-from airflow import DAG
 from airflow.decorators import dag, task
 from datetime import datetime, timedelta
-from tasks.clean.clean_data import clean_data
+from tasks.clean.main import clean_bucket
 from tasks.extract.main import extract
 from tasks.transform.main import transform
 from tasks.load.main import load
 # Default arguments for the DAG
+
+
+
 default_args = {
     'owner': 'esgi',
     'depends_on_past': False,
@@ -25,7 +27,7 @@ default_args = {
 )
 def etl_dag():
 
-    cleaned = clean_data()
+    cleaned = clean_bucket(source_bucket="data", destination_folder="data")
     extraction_timestamp = extract()
     transform_timestamp = transform(timestamp=extraction_timestamp)
     loaded = load(timestamp=transform_timestamp)

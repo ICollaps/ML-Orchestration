@@ -3,8 +3,10 @@ import clickhouse_connect
 import pandas as pd
 from minio import Minio
 from io import StringIO
+from dataset.datasets import output_bucket
 
-@task
+
+@task(outlets=[output_bucket])
 def load(timestamp: int):
 
     client = clickhouse_connect.get_client(host='clickhouse')

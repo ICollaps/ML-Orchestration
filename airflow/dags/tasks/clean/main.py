@@ -1,11 +1,11 @@
 from airflow.decorators import task
 from minio import Minio
-from minio.commonconfig import CopySource, REPLACE
 from minio.error import S3Error
+from minio.commonconfig import CopySource, REPLACE
 
 
 @task
-def clean_data():
+def clean_bucket(source_bucket: str, destination_folder: str):
     
     minio_url = "minio:9000"
     print(f"Connecting to minio on {minio_url}")
@@ -17,7 +17,6 @@ def clean_data():
         secure=False
     )
 
-    source_bucket = "data"
     destination_bucket = "archive"
 
     try:
@@ -28,13 +27,14 @@ def clean_data():
 
         for obj in objects:
             copy_source = CopySource(source_bucket, obj.object_name)
+            destination_object_name = f"{destination_folder}/{obj.object_name}"
             minio_client.copy_object(
                 bucket_name=destination_bucket,
-                object_name=obj.object_name,
+                object_name=destination_object_name,
                 source=copy_source,
             )
             minio_client.remove_object(source_bucket, obj.object_name)
-            print(f"Moved {obj.object_name} to {destination_bucket}")
+            print(f"Moved {obj.object_name} to {destination_bucket}/{destination_folder}")
 
     except S3Error as err:
         print(f"Error occurred: {err}")
