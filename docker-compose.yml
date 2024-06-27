@@ -96,6 +96,7 @@ services:
       - "9005:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
 
   minio:
     image: docker.io/bitnami/minio:2024
