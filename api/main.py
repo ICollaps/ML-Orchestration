@@ -15,7 +15,16 @@ from sklearn.metrics import mean_squared_error
 import mlflow.pyfunc
 
 app = fastapi.FastAPI()
-# redis_client = redis.Redis(host='cache', port=6380, db=0)
+
+redis_client = None
+try:
+    redis_client = redis.Redis(host='cache', port=6380, db=0)
+    redis_client.ping()
+    redis_available = True
+except (redis.ConnectionError, redis.TimeoutError):
+    print("Redis is not available")
+    redis_available = False
+
 
 mlflow.set_tracking_uri("http://mlflow:5000")
 mlflow_client = MlflowClient()
@@ -60,29 +69,35 @@ def load_model():
 async def health():
     return {"response": "ok"}
 
+
 @app.post("/predict")
 async def predict(features: Features):
     if model is None:
         raise fastapi.HTTPException(status_code=404, detail="Model not loaded.")
-    try:
-        # cache_key = generate_cache_key(features)
-        # cached_result = redis_client.get(cache_key)
+    
+    cache_key = generate_cache_key(features)
+    
+    if redis_available:
+        try:
+            cached_result = redis_client.get(cache_key)
+            if cached_result:
+                print("Result returned from cache")
+                return {"prediction": json.loads(cached_result)}
+        except (redis.ConnectionError, redis.TimeoutError):
+            print("Error accessing Redis cache, proceeding without cache")
 
-        # if cached_result:
-        #     print("Result returned from cache")
-        #     return {"prediction": json.loads(cached_result)}
-
-        data = pd.DataFrame([features.dict()])
-        prediction = model.predict(data)
-        predicted_labels = prediction.tolist()
-        
-        # redis_client.set(cache_key, json.dumps(predicted_labels))
-        print("Result stored in cache")
-        
-        return {"prediction": predicted_labels}
-
-    except Exception as e:
-        raise fastapi.HTTPException(status_code=500, detail=str(e))
+    data = pd.DataFrame([features.dict()])
+    prediction = model.predict(data)
+    predicted_labels = prediction.tolist()
+    
+    if redis_available:
+        try:
+            redis_client.set(cache_key, json.dumps(predicted_labels))
+            print("Result stored in cache")
+        except (redis.ConnectionError, redis.TimeoutError):
+            print("Error storing result in Redis cache")
+    
+    return {"prediction": predicted_labels}
 
 @app.post("/restart")
 async def restart():
