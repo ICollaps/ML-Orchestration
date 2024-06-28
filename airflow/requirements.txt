@@ -3,3 +3,8 @@ pandas
 requests
 clickhouse-connect
 scikit-learn
+flaml
+xgboost==2.0.0
+lightgbm
+mlflow
+flaml[automl]

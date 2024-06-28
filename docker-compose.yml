@@ -94,12 +94,21 @@ services:
     container_name: api
     ports:
       - "8000:8000"
+    volumes:
+      - ./mlflow/artifacts:/mlflow/artifacts
 
-  cache:
-    image: "redis:alpine"
-    container_name: redis
-    ports:
-      - "6380:6379"
+  # training:
+  #   build:
+  #     context: ./training_service
+  #   container_name: training
+  #   ports:
+  #     - "8007:8000"
+
+  # cache:
+  #   image: "redis:alpine"
+  #   container_name: redis
+  #   ports:
+  #     - "6380:6379"
 
   clickhouse:
     image: "clickhouse/clickhouse-server"
@@ -114,14 +123,11 @@ services:
   minio:
     image: docker.io/bitnami/minio:2024
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '9003:9000'
+      - '9002:9001'
     environment:
     - MINIO_ROOT_USER=minioadmin
     - MINIO_ROOT_PASSWORD=minioadmin
-    - MINIO_NOTIFY_WEBHOOK_ENABLE_PRIMARY=on
-    - MINIO_NOTIFY_WEBHOOK_ENDPOINT_PRIMARY=http://api:8000/webhook
-    - MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN_PRIMARY=your_auth_token
     volumes:
       - 'minio_data:/bitnami/minio/data'
 
@@ -131,11 +137,11 @@ services:
     container_name: mlflow
     ports:
       - "5000:5000"
-    volumes:
-      - ./mlflow/mlruns:/mlflow/mlruns
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - ARTIFACT_ROOT=/mlflow/mlruns
+    volumes:
+      - ./mlflow/artifacts:/mlflow/artifacts
 
   postgres:
     image: postgres:13

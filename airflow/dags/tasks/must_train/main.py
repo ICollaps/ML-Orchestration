@@ -21,7 +21,7 @@ def must_train():
     objects = minio_client.list_objects(bucket_name, recursive=True)
 
     num_files = 0
-    minimum_files = 5
+    minimum_files = 2
 
     for obj in objects:
         num_files += 1
