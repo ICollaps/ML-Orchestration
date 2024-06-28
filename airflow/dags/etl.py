@@ -18,7 +18,7 @@ default_args = {
 @dag(
     default_args=default_args,
     description='ETL',
-    schedule_interval=None,
+    schedule_interval='*/5 * * * *',
     start_date=datetime(2023, 1, 1),
     catchup=False,
     tags=['example'],
