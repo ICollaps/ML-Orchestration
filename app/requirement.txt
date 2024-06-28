@@ -1,0 +1,12 @@
+streamlit
+streamlit_shadcn_ui
+ydata_profiling
+streamlit_pandas_profiling
+pandas
+pygwalker
+clickhouse_connect
+pydeck
+requests
+bs4
+geopy
+polyline
