@@ -20,7 +20,7 @@ def promot_model(model_version: int):
         model_in_prod = mlflow_client.get_model_version_by_alias(model_name, "champion")
         model_in_prod_mse = float(model_in_prod.tags.get("mse", "inf"))
 
-        if trained_model_mse > model_in_prod_mse:
+        if trained_model_mse < model_in_prod_mse:
             print(f"Trained model got a higher mse ({trained_model_mse}) than current prod model ({model_in_prod_mse}). New model will be promoted to production")
             mlflow_client.set_registered_model_alias(model_name, "champion", str(trained_model.version))
             print(f'Model registered as {model_name} with alias "champion"')
