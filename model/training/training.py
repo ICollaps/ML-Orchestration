@@ -3,7 +3,9 @@ from flaml import AutoML
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import joblib
-
+import mlflow
+import mlflow.sklearn
+import logging
 # Charger les données depuis le fichier CSV
 file_path = '080523-2days-correct.csv'
 data = pd.read_csv(file_path)
@@ -51,3 +53,22 @@ loaded_model = joblib.load(model_path)
 example_data = X_test.iloc[:1]  # Utiliser la première ligne de X_test comme exemple
 example_prediction = loaded_model.predict(example_data)
 print(f'Example prediction: {example_prediction}')
+
+mlflow.set_tracking_uri("http://mlflow:5001")  # Update with your MLflow server URI
+
+try:
+    with mlflow.start_run() as run:
+        mlflow.log_param("time_budget", automl_settings["time_budget"])
+        mlflow.log_param("task", automl_settings["task"])
+        mlflow.log_param("estimator_list", automl_settings["estimator_list"])
+        mlflow.log_metric("mse", mse)
+        mlflow.sklearn.log_model(loaded_model, "model")
+        mlflow.log_artifact(model_path, artifact_path="model_artifacts")
+        logging.info("Model and artifact logged to MLflow")
+
+        # Register the model
+        model_uri = f"runs:/{run.info.run_id}/model"
+        mlflow.register_model(model_uri, "VelibModel")
+        logging.info("Model registered to MLflow")
+except Exception as e:
+    logging.error(f"MLflow logging failed: {e}")

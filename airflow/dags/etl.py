@@ -21,7 +21,7 @@ default_args = {
     schedule_interval=None,
     start_date=datetime(2023, 1, 1),
     catchup=False,
-    tags=['example'],
+    tags=['etl'],
 )
 def etl_dag():
 

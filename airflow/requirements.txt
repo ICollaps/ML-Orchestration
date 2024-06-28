@@ -1,6 +1,15 @@
+apache-airflow
 minio
 pandas
 requests
+mlflow
 clickhouse-connect
-tensorflow
 scikit-learn
+flaml[automl]
+joblib
+lightgbm
+xgboost==2.0.0
+
+
+
+
