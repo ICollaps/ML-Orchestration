@@ -2,7 +2,7 @@ from airflow.decorators import task
 from mlflow import MlflowClient
 import requests
 from mlflow.exceptions import RestException
-
+import json
 
 
 
@@ -31,6 +31,21 @@ def promot_model(model_version: int):
                 print("API restart notification sent")
             else:
                 print(f'Failed to send API restart: {response.status_code} - {response.text}')
+
+            discord_response = requests.post(
+                "https://discord.com/api/webhooks/1256224489549725756/aQg-l42OCwr-S7Y2_3dbHRp_LtH0v_ZA3_zcO1MPTBzocUrDXF5puoLTBNXTEA7Z4-se",
+                data=json.dumps({
+                    "content": f"New Model version {trained_model.version} with mse {trained_model_mse} pushed to production"
+                }), headers={
+                    "Content-Type": "application/json"
+                })
+
+            if discord_response.status_code == 204:
+                print("Message sent successfully!")
+            else:
+                print(f"Failed to send message: {response.status_code}")
+
+
         else:
             print("Current prod model is better")
 
